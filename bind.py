@@ -46,14 +46,9 @@ def gh(param):
 def my_reduce_rq(func, sequence):
     "rerereduce"
 
-    if len(sequence) < 2:
-        return None
-    if len(sequence) == 2:
-        return func(sequence[0], sequence[1])
-    temp_sequence = []
-    temp_sequence.append(func(sequence[0], sequence[1]))
-    temp_sequence += sequence[2:]
-    return my_reduce_rq(func, temp_sequence)
+    if len(sequence) == 1:
+         return sequence[0]
+    return my_reduce_rq(func, [func(*sequence[:2])] + sequence[2:])
 
 def my_sum(a, b):
 	return a + b
@@ -73,8 +68,7 @@ def my_bind2(func, *param1, **param2):
     def func1(*param3, **param4):
         temp_params = param1 + param3
         temp_params2 = param2
-        for i in param4:
-            temp_params2[i] = param4[i]
+        temp_params2.update(param4)
         return func(*temp_params, **temp_params2)
     return func1
 
