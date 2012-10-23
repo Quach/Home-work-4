@@ -3,15 +3,22 @@
 
 import time
 
+#def map_rq(func, iterator):
+#    "map rererererecursion"
+
+#    res = []
+#    if len(iterator) == 0:
+#        return res
+#    res.append(func(iterator[0]))
+#    res += map_rq(func, iterator[1:])
+#    return res
+
 def map_rq(func, iterator):
     "map rererererecursion"
 
-    res = []
     if len(iterator) == 0:
-        return res
-    res.append(func(iterator[0]))
-    res += map_rq(func, iterator[1:])
-    return res
+        return []
+    return [func(iterator[0])] + (map_rq(func, iterator[1:]))
 
 def map_yield(func, iterator):
     "map generator"
@@ -30,13 +37,9 @@ def map_rq_yield(func, iterator):
 def my_filter_rq(func, iterator):
     "fififilter"
 
-    res = []
     if len(iterator) == 0:
-        return res
-    if func(iterator[0]):
-        res.append(iterator[0])
-    res += my_filter_rq(func, iterator[1:])
-    return res
+        return []
+    return ([iterator[0]] if func(iterator[0]) else []) + my_filter_rq(func, iterator[1:])
 
 def gh(param):
 	"If more than 3"
@@ -90,17 +93,59 @@ def test_bind2_func(a, b, c, d, e, f, g):
 #        return func(*params2, **params1)
 #    return recurce_func
 
-def my_bind3(func, *params):
-    "recurce bind"
+#def my_bind3(func, **params):
+#    "recurce bind"
 
-    def recurce_func(*params_rec):
-        params += params_rec
-        if func.func_code.co_argcount == (len(params)):
-            return func(*params)
+#    def recurce_func(**params_rec):
+#        params.update(params_rec)
+#        if func.func_code.co_argcount == (len(params)):
+#            return func(**params)
+#        else:
+#            return recurce_func
+#    if func.func_code.co_argcount == len(params):
+#        return func(**params)
+#    return recurce_func
+
+def my_bind3(func, *param1, **params):
+    "recurce bind"
+    #func could be optimaze...
+
+    #make from tuple to list for remember
+    temp_param = []
+    #write in list first params from my_bind3
+    for p in param1:
+        temp_param.append(p)
+
+    def recurce_func(*param2, **params_rec):
+        #local list
+        l_param1 = []
+        #local dict
+        l_param2 = {}
+        
+        #get remebbered vals to local list and dict
+        l_param2.update(params)
+        for p1 in temp_param:
+            l_param1.append(p1)
+
+        #get new vals to local list and dict
+        l_param2.update(params_rec)
+        for p1 in param2:
+            l_param1.append(p1)
+
+        #if enough to exec func -> exec func, dom't remember new vals
+        if func.func_code.co_argcount == (len(l_param1) + len(l_param2)):
+            return func(*l_param1, **l_param2)
+        #if not enought - remember new vals
         else:
+            #rewrite local list and dict to "global"
+            for p1 in l_param1[len(temp_param):]:
+                temp_param.append(p1)
+            params.update(l_param2)
             return recurce_func
-    if func.func_code.co_argcount == len(params):
-        return func(*params)
+
+    if func.func_code.co_argcount == (len(params) + len(param1)):
+        return func(*param1 , **params)
+
     return recurce_func
 
 def time_me(func, stat_dict):
@@ -169,14 +214,32 @@ def main():
     def f(a, b, c):
         return [a, b, c]
   
+    assert my_bind3(f, a = 1, b = 2,c = 3) == [1, 2, 3]
+    f2 = my_bind3(f, a = 1)
+    assert f2(b = 4,c = 5) == [1, 4, 5]
+    assert f2(b = 6,c = 7) == [1, 6, 7]
+    f2 = my_bind3(f, a = 1)
+    f3 = f2(b = 9)
+    assert f3(c = 10) == [1, 9, 10]
+    assert f2(b = 9,c = None) == [1, 9, None]
+    f2 = my_bind3(f, 1)
+    assert f2(4,5) == [1, 4, 5]
+    assert my_bind3(f, 1, 2,3) == [1, 2, 3]
+    f2 = my_bind3(f, 1)
+    assert f2(4,5) == [1, 4, 5]
+    assert f2(6,7) == [1, 6, 7]
+    f2 = my_bind3(f, 1)
+    f3 = f2(9)
+    assert f3(10) == [1, 9, 10]
+    assert f2(None) == [1, 9, None]
+
+    #home work unit tests
     assert my_bind3(f, 1, 2, 3) == [1, 2, 3]
     f2 = my_bind3(f, 1)
     assert f2(4, 5) == [1, 4, 5]
     assert f2(6, 7) == [1, 6, 7]
-    assert f2(9) == f2
     f3 = f2(9)
-    assert f3(10) == [1, 9, 10]
-    assert f2(9, None) == [1, 9, None]
+    assert f3(None) == [1, 9, None]
     print "Bind 3 OK!"
 
     statistics = {}
